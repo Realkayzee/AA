@@ -3,7 +3,8 @@ pragma solidity =0.8.20;
 
 import "../interfaces/IDiamondCut.sol";
 import { CREATE3 } from "solady/src/utils/CREATE3.sol";
-import "../Diamond.sol";
+import { Diamond } from "../Diamond.sol";
+import { IERC173 } from "../interfaces/IERC173.sol";
 
 
 /**
@@ -31,10 +32,10 @@ contract PrideSmartAccountFactory {
      * return address if the account is already deployed with the inputed salt
      * Note that during UserOperation execution, this method is called only if the account is not deployed.
      */
-    function createAccount(address owner, bytes32 salt) public returns (address) {
+    function createAccount(address owner, bytes32 salt, IDiamondCut.FacetCut[] calldata cut, address diamondInit) public returns (address account) {
         address deployedAddress = salt.getDeployed();
         if(deployedAddress == address(0)) {
-            return salt.deploy(
+            account = salt.deploy(
                 abi.encodePacked(
                     type(Diamond).creationCode,
                     abi.encode(
@@ -44,8 +45,11 @@ contract PrideSmartAccountFactory {
                 ),
                 0
             );
+
+            bytes memory functionCall = abi.encodeWithSignature("init()");
+            IDiamondCut(account).diamondCut(cut, diamondInit, functionCall);
         } else {
-            return deployedAddress;
+            account = deployedAddress;
         }
     }
 
@@ -89,9 +93,5 @@ contract PrideSmartAccountFactory {
              */
             addr := keccak256(add(ptr, 0x0b), 0x55)
         }
-    }
-
-    function upgradeAccount(IDiamondCut.FacetCut[] calldata cut, address prideSmartAccount) public {
-        IDiamondCut(prideSmartAccount).diamondCut(cut, address(0), "");
     }
 }
