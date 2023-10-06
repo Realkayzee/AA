@@ -2,11 +2,12 @@
 pragma solidity ^0.8.0;
 
 import { LibDiamond } from "../libraries/LibDiamond.sol";
+import { LibImplementor } from "../libraries/LibImplementor.sol";
 import { IERC173 } from "../interfaces/IERC173.sol";
 
 contract OwnershipFacet is IERC173 {
     function transferOwnership(address _newOwner) external override {
-        LibDiamond.enforceIsContractOwner();
+        LibImplementor.requireFromEntryPoint();
         LibDiamond.setContractOwner(_newOwner);
     }
 
